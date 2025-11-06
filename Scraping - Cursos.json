@@ -1,0 +1,959 @@
+{
+  "name": "Scraping - Cursos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2256,
+        -448
+      ],
+      "id": "394b69ae-faa9-4859-9348-15d2ccb96367",
+      "name": "Obtener Sitios a investigar"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2256,
+        -240
+      ],
+      "id": "73b77a6b-dd87-4cea-9673-9f1e3597d850",
+      "name": "Inicio manual de proceso"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI",
+          "mode": "list",
+          "cachedResultName": "Courses Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "sisitos web a buscar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2048,
+        -240
+      ],
+      "id": "3b51bb01-f246-468e-8a32-a613404f14f3",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "e55Oh428nY4tYemz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e79474a5-a8bd-4fc8-a3a4-c60eae7664e4",
+              "leftValue": "={{ $json['Sitio Web'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e4281c64-6f10-4e39-af9c-6fbfb2b1ad3b",
+              "leftValue": "={{ $json['Sitio Web'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -1840,
+        -240
+      ],
+      "id": "7c6273d7-2187-45a8-9357-10e2db70c96c",
+      "name": "Filtrar sitios web con enlace"
+    },
+    {
+      "parameters": {
+        "content": "## Inicio de proceso\nTomar sitios web para buscar información en ellos",
+        "height": 448,
+        "width": 768
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2304,
+        -528
+      ],
+      "typeVersion": 1,
+      "id": "bd9fb612-4a8a-4267-a5e0-676ea965d6ef",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['Sitio Web'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1632,
+        -240
+      ],
+      "id": "5640346b-c28e-453e-9cdf-c887ad5036e6",
+      "name": "Obtener HTML del sitio web"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        -256
+      ],
+      "id": "3bbc1bd7-c786-49fc-ab67-35dfc506435a",
+      "name": "Transformar a Markdown"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "# Información\nEres un asistente para extraer datos de un sitio web, se te dará la información en formato Markdown, y necesito que retornes la información en el formato deseado.\n\nNo retornes nada más de lo que te necesito.\n\nSi el URL no está completo, completarlo usando el URL que también te proveeran del sitio del cual se extrae la información.\n\n## Objetivo\nInformación que necesitas extraer y encontrar: \n\n- Nombre del instructor (instructorName)\n- url del curso de Udemy (udemyUrl) (si lo tiene, si no null)\n- url del curso de DevTalles (devtallesUrl) \n- Nombre del curso (courseName)\n- Descripción del curso (description)\n- Categoría del curso (category)\n- Otra información relevante (additionalInformation)\n\n## Ejemplo de salida\nNecesito un json con la siguiente estructura:\n[\n{\n  courseName: 'XXX',\n  instructor: 'XXX',\n  devtallesUrl: 'https://xxx',\n  udemyUrl: 'https://xxx',\n  description: 'xxx',\n  category: 'xxx',\n  additionalInformation: 'xxxx' \n},\n{\n  courseName: 'XXX',\n  instructor: 'XXX',\n  devtallesUrl: 'https://xxx',\n  udemyUrl: 'https://xxx',\n  description: 'xxx',\n  category: 'xxx',\n  additionalInformation: 'xxxx' \n}\n]"
+            },
+            {
+              "content": "=# URL del sitio\n{{ $('Get row(s) in sheet').item.json['Sitio Web'] }}\n\n# Data a extrar\n{{ $json.data }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        -256
+      ],
+      "id": "962b96aa-7f2e-42b1-9c15-e5bf4771a0f7",
+      "name": "Enviar Info OPEN IA",
+      "credentials": {
+        "openAiApi": {
+          "id": "PoOdx8EQeKRJpMTS",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output[0].content[0].text.courses",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -256
+      ],
+      "id": "84eb9048-582b-4688-afbd-a15b6c28b804",
+      "name": "Extraer arreglo de cursos"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        -240
+      ],
+      "id": "cb2fc893-9360-4d1b-b108-5ffe3b6a410a"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -592,
+        -256
+      ],
+      "id": "f20f7222-6cd1-452b-b7dd-613ca9341ab0",
+      "name": "Iterar cada URL"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI",
+          "mode": "list",
+          "cachedResultName": "Courses Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1041869247,
+          "mode": "list",
+          "cachedResultName": "Resultados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit#gid=1041869247"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre curso": "={{ $json.courseName }}",
+            "DevTalles ": "={{ $json.devtallesUrl }}",
+            "Udemy": "={{ $json.udemyUrl }}",
+            "Descripcccion": "={{ $json.description }}",
+            "Instructor": "={{ $json.instructorName }}"
+          },
+          "matchingColumns": [
+            "Nombre curso"
+          ],
+          "schema": [
+            {
+              "id": "Nombre curso",
+              "displayName": "Nombre curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Instructor",
+              "displayName": "Instructor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "DevTalles ",
+              "displayName": "DevTalles ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Udemy",
+              "displayName": "Udemy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Descripcccion",
+              "displayName": "Descripcccion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Google Docs-Temario",
+              "displayName": "Google Docs-Temario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -288,
+        -240
+      ],
+      "id": "91d8a94f-4865-4391-94a1-ff20adf6f20c",
+      "name": "Actualizar Información del curso",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "e55Oh428nY4tYemz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "scrape",
+        "url": "={{ $json.Udemy }}",
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawl",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -240
+      ],
+      "id": "b3978760-5a57-4e0d-8a30-7b9c309a95c8",
+      "name": "Scrape a url and get its content",
+      "credentials": {
+        "firecrawlApi": {
+          "id": "68l5wWzdU7gcgjpH",
+          "name": "Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v2/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer fc-aeca7e14e81e4eb0a62efd93fac51fb0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"url\": \"https://www.udemy.com/course/nest-framework/?couponCode=NOVIEMBRE-2025\",\n  \"onlyMainContent\": false,\n  \"maxAge\": 172800000,\n  \"parsers\": [\n    \"pdf\"\n  ],\n  \"formats\": [\n    \"markdown\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1040,
+        -640
+      ],
+      "id": "70832fb2-b30d-4c23-b227-d1cdb17cd6da",
+      "name": "Obtener Data FireCraw"
+    },
+    {
+      "parameters": {
+        "folderId": "1RqDrgqn8rQSmREcHVwx584uvKiL3Ok2c",
+        "title": "={{ $json.data.metadata['og:title'].replaceAll(':', '').replaceAll('|', '-') }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -240
+      ],
+      "id": "f73a87d8-c84a-4e2d-9035-fe29a2df2405",
+      "name": "Create a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "ihujd5olg9uisyhL",
+          "name": "GoogleDocs pelcortes@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $('Create a document').item.json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Scrape a url and get its content').item.json.data.markdown }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -240
+      ],
+      "id": "8d169fe1-1fe3-4da0-8bb0-888fc82a7f75",
+      "name": "Actualizar temario google docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "ihujd5olg9uisyhL",
+          "name": "GoogleDocs pelcortes@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI",
+          "mode": "list",
+          "cachedResultName": "Courses Scraping",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1041869247,
+          "mode": "list",
+          "cachedResultName": "Resultados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wyWDr1YCizmCkrORMMHPi-6XVf8JcwhYFi0QGO27ADI/edit#gid=1041869247"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre curso": "={{ $('Actualizar Información del curso').item.json['Nombre curso'] }}",
+            "Google Docs-Temario": "=https://docs.google.com/document/d/{{ $json.id }}"
+          },
+          "matchingColumns": [
+            "Nombre curso"
+          ],
+          "schema": [
+            {
+              "id": "Nombre curso",
+              "displayName": "Nombre curso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Instructor",
+              "displayName": "Instructor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "DevTalles ",
+              "displayName": "DevTalles ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Udemy",
+              "displayName": "Udemy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Descripcccion",
+              "displayName": "Descripcccion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Google Docs-Temario",
+              "displayName": "Google Docs-Temario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        336,
+        -240
+      ],
+      "id": "6efcb670-b9e6-4b3c-80c0-e8830ad97789",
+      "name": "Actualizar Url Temario",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "e55Oh428nY4tYemz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=# Información\nEres un asistente para extraer datos de un sitio web, se te dará la información en formato Markdown, y necesito que retornes la información en el formato deseado.\n\nNo retornes nada más de lo que te necesito.\n\nSi el URL no está completo, completarlo usando el URL que también te proveeran del sitio del cual se extrae la información.\n\n## Objetivo\nInformación que necesitas extraer y encontrar: \n\n- Nombre del instructor (instructorName)\n- url del curso de Udemy (udemyUrl) (si lo tiene, si no null)\n- url del curso de DevTalles (devtallesUrl) \n- Nombre del curso (courseName)\n- Descripción del curso (description)\n- Categoría del curso (category)\n- Otra información relevante (additionalInformation)\n\n## Ejemplo de salida\nNecesito un json con la siguiente estructura:\n[\n{\n  courseName: 'XXX',\n  instructor: 'XXX',\n  devtallesUrl: 'https://xxx',\n  udemyUrl: 'https://xxx',\n  description: 'xxx',\n  category: 'xxx',\n  additionalInformation: 'xxxx' \n},\n{\n  courseName: 'XXX',\n  instructor: 'XXX',\n  devtallesUrl: 'https://xxx',\n  udemyUrl: 'https://xxx',\n  description: 'xxx',\n  category: 'xxx',\n  additionalInformation: 'xxxx' \n}\n]"
+            },
+            {
+              "role": "system",
+              "content": "={{ $('Scrape a url and get its content').item.json.data.markdown }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -240
+      ],
+      "id": "59d8fe40-c55d-4f6e-bbbb-ed330ec8711f",
+      "name": "Extraer información de curso",
+      "credentials": {
+        "openAiApi": {
+          "id": "PoOdx8EQeKRJpMTS",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Get row(s) in sheet": [
+      {
+        "json": {
+          "row_number": 2,
+          "Sitio Web": "https://fernando-herrera.com/"
+        }
+      }
+    ],
+    "Obtener HTML del sitio web": [
+      {
+        "json": {
+          "data": "<!DOCTYPE html><html lang=\"en\" data-astro-cid-ouamjn2i> <head><meta charset=\"UTF-8\"><meta name=\"astro-view-transitions-enabled\" content=\"true\"><meta name=\"astro-view-transitions-fallback\" content=\"animate\"><script type=\"module\" src=\"/_astro/ClientRouter.astro_astro_type_script_index_0_lang.Om7fEHb-.js\"></script><meta name=\"viewport\" content=\"width=device-width\"><link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"><meta name=\"generator\" content=\"Astro v5.13.2\"><link rel=\"canonical\" href=\"https://fernando-herrera.com/\"><!-- Meta tags --><title>Fernando Herrera | Home</title><meta name=\"title\" content=\"Fernando Herrera | Home\"><meta name=\"description\" content=\"Sitio oficial de Fernando Herrera. Es un desarrollador de software, maestro y emprendedor. Tiene más de 15 años de experiencia en la industria del desarrollo de software y enseñanza en línea. Es el creador de los populares cursos en línea en Udemy: Angular, React, Vue, Flutter, Nest, Node.js y más.\"><!-- Open Graph / Facebook --><meta property=\"og:title\" content=\"Fernando Herrera | Home\"><meta property=\"og:url\" content=\"https://fernando-herrera.com/\"><meta property=\"og:description\" content=\"Sitio oficial de Fernando Herrera. Es un desarrollador de software, maestro y emprendedor. Tiene más de 15 años de experiencia en la industria del desarrollo de software y enseñanza en línea. Es el creador de los populares cursos en línea en Udemy: Angular, React, Vue, Flutter, Nest, Node.js y más.\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://res.cloudinary.com/dl1k2dee0/image/upload/v1702139957/website/s8c46fxqzqbngnz9ff56.jpg\"><!-- <meta property=\"og:image\" content={new URL(image, Astro.url)} /> --><!-- <meta property=\"og:image\" content={image} /> --><!-- Twitter --><meta property=\"twitter:card\" content=\"summary_large_image\"><meta property=\"twitter:url\" content=\"https://fernando-herrera.com/\"><meta property=\"twitter:title\" content=\"Fernando Herrera | Home\"><meta property=\"twitter:description\" content=\"Sitio oficial de Fernando Herrera. Es un desarrollador de software, maestro y emprendedor. Tiene más de 15 años de experiencia en la industria del desarrollo de software y enseñanza en línea. Es el creador de los populares cursos en línea en Udemy: Angular, React, Vue, Flutter, Nest, Node.js y más.\"><meta property=\"twitter:image\" content=\"https://res.cloudinary.com/dl1k2dee0/image/upload/v1702139957/website/s8c46fxqzqbngnz9ff56.jpg\"><!-- Favicon --><!-- <link\n      rel=\"shortcut icon\"\n      type=\"image/x-icon\"\n      href=\"/assets/images/favicon.png\"\n    /> --><link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\"><!-- CSS\n\t============================================ --><link rel=\"stylesheet\" href=\"/assets/css/vendor/bootstrap.min.css\"><!-- <link rel=\"stylesheet\" href=\"/assets/css/vendor/slick.css\" /> --><!-- <link rel=\"stylesheet\" href=\"/assets/css/vendor/slick-theme.css\" /> --><link rel=\"stylesheet\" href=\"/assets/css/plugins/sal.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/feather.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/fontawesome.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/euclid-circulara.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/swiper.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/magnify.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/odometer.css\"><!-- <link rel=\"stylesheet\" href=\"/assets/css/plugins/animation.css\" /> --><link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.4.0/animate.min.css\" integrity=\"sha512-qJ0/lqZSkIHb+lwpMS9oGkWGUEliuTgmGuXIUWT64/C7w96WT/RzV1STU3yQScBGK+e81aZFjoRgeJv/taVMgA==\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/bootstrap-select.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/jquery-ui.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/magnigy-popup.min.css\"><link rel=\"stylesheet\" href=\"/assets/css/plugins/plyr.css\"><link rel=\"stylesheet\" href=\"/assets/css/style.min.css\"><style>.astro-route-announcer{position:absolute;left:0;top:0;clip:rect(0 0 0 0);clip-path:inset(50%);overflow:hidden;white-space:nowrap;width:1px;height:1px}\n/*!\n * Toastify js 1.12.0\n * https://github.com/apvarun/toastify-js\n * @license MIT licensed\n *\n * Copyright (C) 2018 Varun A P\n */.toastify{padding:12px 20px;color:#fff;display:inline-block;box-shadow:0 3px 6px -1px #0000001f,0 10px 36px -4px #4d60e84d;background:-webkit-linear-gradient(315deg,#73a5ff,#5477f5);background:linear-gradient(135deg,#73a5ff,#5477f5);position:fixed;opacity:0;transition:all .4s cubic-bezier(.215,.61,.355,1);border-radius:2px;cursor:pointer;text-decoration:none;max-width:calc(50% - 20px);z-index:2147483647}.toastify.on{opacity:1}.toast-close{background:transparent;border:0;color:#fff;cursor:pointer;font-family:inherit;font-size:1em;opacity:.4;padding:0 5px}.toastify-right{right:15px}.toastify-left{left:15px}.toastify-top{top:-150px}.toastify-bottom{bottom:-150px}.toastify-rounded{border-radius:25px}.toastify-avatar{width:1.5em;height:1.5em;margin:-7px 5px;border-radius:2px}.toastify-center{margin-left:auto;margin-right:auto;left:0;right:0;max-width:fit-content;max-width:-moz-fit-content}@media only screen and (max-width: 360px){.toastify-right,.toastify-left{margin-left:auto;margin-right:auto;left:0;right:0;max-width:fit-content}}input[data-astro-cid-ouamjn2i][readonly],input[data-astro-cid-ouamjn2i][disabled]{display:block!important;background-color:#eee!important}\n@keyframes astroFadeInOut{0%{opacity:1}to{opacity:0}}@keyframes astroFadeIn{0%{opacity:0;mix-blend-mode:plus-lighter}to{opacity:1;mix-blend-mode:plus-lighter}}@keyframes astroFadeOut{0%{opacity:1;mix-blend-mode:plus-lighter}to{opacity:0;mix-blend-mode:plus-lighter}}@keyframes astroSlideFromRight{0%{transform:translate(100%)}}@keyframes astroSlideFromLeft{0%{transform:translate(-100%)}}@keyframes astroSlideToRight{to{transform:translate(100%)}}@keyframes astroSlideToLeft{to{transform:translate(-100%)}}@media (prefers-reduced-motion){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}[data-astro-transition-scope]{animation:none!important}}\n</style><script type=\"module\" src=\"/_astro/page.CAEqpuDM.js\"></script><style>[data-astro-transition-scope=\"astro-565hgp22-1\"] { view-transition-name: nest-backend-escalable-banner; }@layer astro { ::view-transition-old(nest-backend-escalable-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(nest-backend-escalable-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(nest-backend-escalable-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(nest-backend-escalable-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-1\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-1\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-1\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-1\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-1\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-1\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-1\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-1\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style><style>[data-astro-transition-scope=\"astro-565hgp22-2\"] { view-transition-name: pricipios-solid-cleancode-banner; }@layer astro { ::view-transition-old(pricipios-solid-cleancode-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(pricipios-solid-cleancode-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(pricipios-solid-cleancode-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(pricipios-solid-cleancode-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-2\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-2\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-2\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-2\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-2\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-2\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-2\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-2\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style><style>[data-astro-transition-scope=\"astro-565hgp22-3\"] { view-transition-name: docker-guia-practica-banner; }@layer astro { ::view-transition-old(docker-guia-practica-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(docker-guia-practica-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(docker-guia-practica-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(docker-guia-practica-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-3\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-3\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-3\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-3\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-3\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-3\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-3\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-3\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style><style>[data-astro-transition-scope=\"astro-565hgp22-4\"] { view-transition-name: patrones-de-diseno-banner; }@layer astro { ::view-transition-old(patrones-de-diseno-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(patrones-de-diseno-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(patrones-de-diseno-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(patrones-de-diseno-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-4\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-4\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-4\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-4\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-4\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-4\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-4\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-4\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style><style>[data-astro-transition-scope=\"astro-565hgp22-5\"] { view-transition-name: spring-boot-banner; }@layer astro { ::view-transition-old(spring-boot-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(spring-boot-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(spring-boot-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(spring-boot-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-5\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-5\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-5\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-5\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-5\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-5\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-5\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-5\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style><style>[data-astro-transition-scope=\"astro-565hgp22-6\"] { view-transition-name: react-router-banner; }@layer astro { ::view-transition-old(react-router-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }::view-transition-new(react-router-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(react-router-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(react-router-banner) { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; } }[data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-6\"],\n\t\t\t[data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-6\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-6\"],\n\t\t\t[data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-6\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback=\"old\"] [data-astro-transition-scope=\"astro-565hgp22-6\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"old\"][data-astro-transition-scope=\"astro-565hgp22-6\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback=\"new\"] [data-astro-transition-scope=\"astro-565hgp22-6\"],\n\t\t\t[data-astro-transition=back][data-astro-transition-fallback=\"new\"][data-astro-transition-scope=\"astro-565hgp22-6\"] { \n\tanimation-duration: 180ms;\n\tanimation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);\n\tanimation-fill-mode: both;\n\tanimation-name: astroFadeIn; }</style></head> <body class=\"rbt-header-sticky\" data-astro-cid-ouamjn2i>  <!-- Start Header Area --><header class=\"rbt-header rbt-header-10\"> <div class=\"rbt-sticky-placeholder\"></div>  <div class=\"rbt-header-top rbt-header-top-1 header-space-betwween bg-not-transparent bg-color-darker top-expended-activation\"> <div class=\"container-fluid\"> <div class=\"top-expended-wrapper\"> <div class=\"top-expended-inner rbt-header-sec align-items-center\"> <div class=\"rbt-header-sec-col rbt-header-left d-none d-xl-block\"> <div class=\"rbt-header-content\">  <div class=\"header-info\"> <ul class=\"rbt-information-list\"> <li> <a target=\"_blank\" href=\"https://www.instagram.com/fernando_her85/\"> <i class=\"fab fa-instagram\"></i> 20K  </a> </li> <li> <a target=\"_blank\" href=\"https://twitter.com/Fernando_Her85\"> <i class=\"fab fa-twitter-square\"></i> 127K  </a> </li> <li> <a target=\"_blank\" href=\"https://www.youtube.com/@devtalles\"> <i class=\"fab fa-youtube-square\"></i> 150K  </a> </li> <li> <a target=\"_blank\" href=\"https://www.udemy.com/user/550c38655ec11/\"> <i class=\"fa fa-graduation-cap\"></i> 650K  </a> </li> </ul> </div>  </div> </div> <div class=\"rbt-header-sec-col rbt-header-center\"> <div class=\"rbt-header-content justify-content-center\"> <div class=\"header-info\"> <div class=\"rbt-header-top-news\"> <div class=\"inner\"> <div class=\"content\"> <span class=\"rbt-badge variation-02 bg-color-primary color-white radius-round\"> NOVIEMBRE-2025 </span> <span class=\"news-text px-3\"> <img src=\"/assets/images/icons/hand-emojji.svg\" alt=\"Hand Emojji\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"50\" height=\"50\">  Cupón activo </span> </div> </div> </div> </div> </div> </div> <div class=\"rbt-header-sec-col rbt-header-right mt_md--10 mt_sm--10\"> <div class=\"rbt-header-content justify-content-start justify-content-lg-end\"> <div class=\"rbt-separator d-none d-xl-block\"></div> <div class=\"header-info d-none d-xl-block\"> <ul class=\"social-share-transparent\"> <li> <a target=\"_blank\" href=\"https://twitter.com/Fernando_Her85\"><i class=\"fab fab fa-twitter\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.linkedin.com/in/fernando-herrera-b6b204200/\"><i class=\"fab fab fa-linkedin-in\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.instagram.com/fernando_her85/\"><i class=\"fab fab fa-instagram\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.youtube.com/@devtalles\"><i class=\"fab fab fa-youtube\"></i></a> </li><li> <a target=\"_blank\" href=\"https://podcasters.spotify.com/pod/show/fernando-her85\"><i class=\"fab fab fa-spotify\"></i></a> </li><li> <a target=\"_blank\" href=\"https://discord.com/invite/pBjEVYTC7t\"><i class=\"fab fab fa-discord\"></i></a> </li> </ul> </div> </div> </div> </div> </div> </div> </div>  <div class=\"rbt-header-wrapper header-space-betwween header-sticky\"> <div class=\"container-fluid\"> <div class=\"mainbar-row rbt-navigation-center align-items-center\"> <!-- Logo --> <a href=\"/\" class=\"logo-gradient\"> Fernando-Herrera </a> <!-- End Logo --> <div class=\"rbt-main-navigation d-none d-xl-block\"> <nav class=\"mainmenu-nav\"> <ul class=\"mainmenu\"> <li class=\"with-megamenu has-menu-child-item\"> <a href=\"/courses\">Cursos</a> </li> <li class=\"with-megamenu has-menu-child-item\"> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/programas-react\">\nProgramas\n</a> </li> <li class=\"with-megamenu has-menu-child-item\"> <a href=\"/historia/\">Historia</a> </li> <li class=\"with-megamenu has-menu-child-item position-static\"> <a href=\"#\">\nMás <i class=\"feather-chevron-down\"></i> </a>  <div class=\"rbt-megamenu grid-item-3\"> <div class=\"wrapper\"> <div class=\"row row--15\"> <div class=\"col-lg-12 col-xl-4 col-xxl-4 single-mega-item\"> <h3 class=\"rbt-short-title\">Información</h3> <ul class=\"mega-menu-item\"> <li> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/mas-talento\">\nHojas de atajos\n</a> </li>  <li> <a target=\"_blank\" href=\"https://www.udemy.com/user/550c38655ec11/\">\nPerfil de Udemy\n</a> </li> </ul> </div> <div class=\"col-lg-12 col-xl-4 col-xxl-4 single-mega-item\"> <h3 class=\"rbt-short-title\">Otros</h3> <ul class=\"mega-menu-item\"> <li> <a href=\"/top-50/\">Top 50 - Alumnos </a> </li>  <li class=\"position-static\"> <a href=\"/auth/login/\">Ingresar </a> </li> </ul> </div> <div class=\"col-lg-12 col-xl-4 col-xxl-4 single-mega-item\"> <div class=\"rbt-ads-wrapper\"> <a class=\"d-block\" href=\"#\"> <!-- TODO: optimizar --> <img src=\"/_image?href=%2F_astro%2Fastronaut-1.DwOLdmP7.jpg&#38;w=300&#38;h=300&#38;f=webp\" alt=\"Astronaut\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"300\" height=\"300\"> </a> </div> </div> </div> </div> </div>  </li> </ul> </nav> </div> <div class=\"d-flex\">  <ul class=\"quick-access\"> <li class=\"access-icon\"> <span class=\"search-trigger-active rbt-round-btn pointer\"> <i class=\"feather-search\"></i> </span> </li> </ul>  <div class=\"mobile-menu-bar d-block d-xl-none\"> <div class=\"hamberger\"> <button class=\"hamberger-button rbt-round-btn\"> <i class=\"feather-menu\"></i> </button> </div> </div>  </div> </div> </div>  <!-- TODO: --> <!-- <HeaderSearch client:idle courses={courses} /> --> <style>astro-island,astro-slot,astro-static-slot{display:contents}</style><script>(()=>{var l=(n,t)=>{let i=async()=>{await(await n())()},e=typeof t.value==\"object\"?t.value:void 0,s={timeout:e==null?void 0:e.timeout};\"requestIdleCallback\"in window?window.requestIdleCallback(i,s):setTimeout(i,s.timeout||200)};(self.Astro||(self.Astro={})).idle=l;window.dispatchEvent(new Event(\"astro:idle\"));})();</script><script>(()=>{var A=Object.defineProperty;var g=(i,o,a)=>o in i?A(i,o,{enumerable:!0,configurable:!0,writable:!0,value:a}):i[o]=a;var d=(i,o,a)=>g(i,typeof o!=\"symbol\"?o+\"\":o,a);{let i={0:t=>m(t),1:t=>a(t),2:t=>new RegExp(t),3:t=>new Date(t),4:t=>new Map(a(t)),5:t=>new Set(a(t)),6:t=>BigInt(t),7:t=>new URL(t),8:t=>new Uint8Array(t),9:t=>new Uint16Array(t),10:t=>new Uint32Array(t),11:t=>1/0*t},o=t=>{let[l,e]=t;return l in i?i[l](e):void 0},a=t=>t.map(o),m=t=>typeof t!=\"object\"||t===null?t:Object.fromEntries(Object.entries(t).map(([l,e])=>[l,o(e)]));class y extends HTMLElement{constructor(){super(...arguments);d(this,\"Component\");d(this,\"hydrator\");d(this,\"hydrate\",async()=>{var b;if(!this.hydrator||!this.isConnected)return;let e=(b=this.parentElement)==null?void 0:b.closest(\"astro-island[ssr]\");if(e){e.addEventListener(\"astro:hydrate\",this.hydrate,{once:!0});return}let c=this.querySelectorAll(\"astro-slot\"),n={},h=this.querySelectorAll(\"template[data-astro-template]\");for(let r of h){let s=r.closest(this.tagName);s!=null&&s.isSameNode(this)&&(n[r.getAttribute(\"data-astro-template\")||\"default\"]=r.innerHTML,r.remove())}for(let r of c){let s=r.closest(this.tagName);s!=null&&s.isSameNode(this)&&(n[r.getAttribute(\"name\")||\"default\"]=r.innerHTML)}let p;try{p=this.hasAttribute(\"props\")?m(JSON.parse(this.getAttribute(\"props\"))):{}}catch(r){let s=this.getAttribute(\"component-url\")||\"<unknown>\",v=this.getAttribute(\"component-export\");throw v&&(s+=` (export ${v})`),console.error(`[hydrate] Error parsing props for component ${s}`,this.getAttribute(\"props\"),r),r}let u;await this.hydrator(this)(this.Component,p,n,{client:this.getAttribute(\"client\")}),this.removeAttribute(\"ssr\"),this.dispatchEvent(new CustomEvent(\"astro:hydrate\"))});d(this,\"unmount\",()=>{this.isConnected||this.dispatchEvent(new CustomEvent(\"astro:unmount\"))})}disconnectedCallback(){document.removeEventListener(\"astro:after-swap\",this.unmount),document.addEventListener(\"astro:after-swap\",this.unmount,{once:!0})}connectedCallback(){if(!this.hasAttribute(\"await-children\")||document.readyState===\"interactive\"||document.readyState===\"complete\")this.childrenConnectedCallback();else{let e=()=>{document.removeEventListener(\"DOMContentLoaded\",e),c.disconnect(),this.childrenConnectedCallback()},c=new MutationObserver(()=>{var n;((n=this.lastChild)==null?void 0:n.nodeType)===Node.COMMENT_NODE&&this.lastChild.nodeValue===\"astro:end\"&&(this.lastChild.remove(),e())});c.observe(this,{childList:!0}),document.addEventListener(\"DOMContentLoaded\",e)}}async childrenConnectedCallback(){let e=this.getAttribute(\"before-hydration-url\");e&&await import(e),this.start()}async start(){let e=JSON.parse(this.getAttribute(\"opts\")),c=this.getAttribute(\"client\");if(Astro[c]===void 0){window.addEventListener(`astro:${c}`,()=>this.start(),{once:!0});return}try{await Astro[c](async()=>{let n=this.getAttribute(\"renderer-url\"),[h,{default:p}]=await Promise.all([import(this.getAttribute(\"component-url\")),n?import(n):()=>()=>{}]),u=this.getAttribute(\"component-export\")||\"default\";if(!u.includes(\".\"))this.Component=h[u];else{this.Component=h;for(let f of u.split(\".\"))this.Component=this.Component[f]}return this.hydrator=p,this.hydrate},e,this)}catch(n){console.error(`[astro-island] Error hydrating ${this.getAttribute(\"component-url\")}`,n)}}attributeChangedCallback(){this.hydrate()}}d(y,\"observedAttributes\",[\"props\"]),customElements.get(\"astro-island\")||customElements.define(\"astro-island\",y)}})();</script><script>window._$HY||(e=>{let t=e=>e&&e.hasAttribute&&(e.hasAttribute(\"data-hk\")?e:t(e.host&&e.host.nodeType?e.host:e.parentNode));[\"click\", \"input\"].forEach((o=>document.addEventListener(o,(o=>{if(!e.events)return;let s=t(o.composedPath&&o.composedPath()[0]||o.target);s&&!e.completed.has(s)&&e.events.push([s,o])}))))})(_$HY={events:[],completed:new WeakSet,r:{},fe(){}});</script><!--xs--><astro-island uid=\"Z1iGdzj\" data-solid-render-id=\"s0\" component-url=\"/_astro/HeaderSearch.DWQG1XMJ.js\" component-export=\"HeaderSearch\" renderer-url=\"/_astro/client.Ff-cyrKK.js\" props=\"{&quot;courses&quot;:[1,[[0,{&quot;id&quot;:[0,&quot;nest&quot;],&quot;etiquetas&quot;:[0,&quot;typescript,backend,web,websocket,node,solid,docker&quot;],&quot;curso&quot;:[0,&quot;Nest: Desarrollo backend escalable con Node&quot;],&quot;cuponDev&quot;:[0,&quot;https://cursos.devtalles.com/courses/nest?coupon=NOVIEMBRE-2025&quot;],&quot;cupon&quot;:[0,&quot;https://www.udemy.com/course/nest-framework/?couponCode=NOVIEMBRE-2025&quot;],&quot;slug&quot;:[0,&quot;nest-backend-escalable&quot;],&quot;obj&quot;:[0,&quot;Nest es un framework de node extensible, versátil y progresivo, el cual nos ofrece la columna vertebral de todo tipo de aplicaciones del lado del servidor. &quot;],&quot;pago&quot;:[0,1],&quot;prioridad&quot;:[0,1],&quot;tipo&quot;:[0,&quot;curso&quot;],&quot;latest&quot;:[0,0],&quot;queryCourse&quot;:[0,null],&quot;enPortada&quot;:[0,0],&quot;lessons&quot;:[0,0],&quot;students&quot;:[0,0],&quot;reviews&quot;:[0,0],&quot;vigente&quot;:[0,1],&quot;youtube&quot;:[0,&quot;ws7Mh9eqXJw&quot;],&quot;category&quot;:[0,&quot;Backend&quot;],&quot;categoria&quot;:[0,&quot;&quot;],&quot;bestseller&quot;:[0,false],&quot;banner&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1720472410/courses/nest/banner/nest.jpg&quot;],&quot;badge&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1701878258/courses/nest/badge/nest.svg&quot;],&quot;devtalles_exclusive&quot;:[0,0],&quot;instructorId&quot;:[0,1]}],[0,{&quot;id&quot;:[0,&quot;solid&quot;],&quot;etiquetas&quot;:[0,&quot;solid, javascript, typescript, principios, node, react, angular, vue, dart, flutter&quot;],&quot;curso&quot;:[0,&quot;Principios:  SOLID y Clean Code&quot;],&quot;cuponDev&quot;:[0,&quot;https://cursos.devtalles.com/courses/solid-clean-code?coupon=NOVIEMBRE-2025&quot;],&quot;cupon&quot;:[0,&quot;https://www.udemy.com/course/solid-clean/?couponCode=NOVIEMBRE-2025&quot;],&quot;slug&quot;:[0,&quot;pricipios-solid-cleancode&quot;],&quot;obj&quot;:[0,&quot;Si hablamos de diseño y desarrollo de aplicaciones, Los principios S.O.L.I.D. son unas palabras que debes conocer como uno de los fundamentos de la arquitectura y desarrollo de software.&quot;],&quot;pago&quot;:[0,1],&quot;prioridad&quot;:[0,1],&quot;tipo&quot;:[0,&quot;curso&quot;],&quot;latest&quot;:[0,0],&quot;queryCourse&quot;:[0,null],&quot;enPortada&quot;:[0,0],&quot;lessons&quot;:[0,0],&quot;students&quot;:[0,0],&quot;reviews&quot;:[0,0],&quot;vigente&quot;:[0,1],&quot;youtube&quot;:[0,&quot;FktWcG7O1vU&quot;],&quot;category&quot;:[0,&quot;Infraestructura&quot;],&quot;categoria&quot;:[0,&quot;&quot;],&quot;bestseller&quot;:[0,false],&quot;banner&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1720473870/courses/solid/banner/solid.jpg&quot;],&quot;badge&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1701878258/courses/solid/badge/solid.svg&quot;],&quot;devtalles_exclusive&quot;:[0,0],&quot;instructorId&quot;:[0,1]}],[0,{&quot;id&quot;:[0,&quot;docker&quot;],&quot;etiquetas&quot;:[0,&quot;docker, node, backend, react, angular, vue, git, image, container&quot;],&quot;curso&quot;:[0,&quot;Docker: Guía práctica de uso para desarrolladores&quot;],&quot;cuponDev&quot;:[0,&quot;https://cursos.devtalles.com/courses/docker-guia-practica?coupon=NOVIEMBRE-2025&quot;],&quot;cupon&quot;:[0,&quot;https://www.udemy.com/course/docker-guia-practica/?couponCode=NOVIEMBRE-2025&quot;],&quot;slug&quot;:[0,&quot;docker-guia-practica&quot;],&quot;obj&quot;:[0,&quot;Aquí aprenderás Docker y para qué te puede servir, aprende a utilizar y crear imágenes, controlar el versionamiento y construcción automática de las mismas.&quot;],&quot;pago&quot;:[0,1],&quot;prioridad&quot;:[0,1],&quot;tipo&quot;:[0,&quot;curso&quot;],&quot;latest&quot;:[0,0],&quot;queryCourse&quot;:[0,null],&quot;enPortada&quot;:[0,0],&quot;lessons&quot;:[0,0],&quot;students&quot;:[0,0],&quot;reviews&quot;:[0,0],&quot;vigente&quot;:[0,1],&quot;youtube&quot;:[0,&quot;k0IcoYQ6smE&quot;],&quot;category&quot;:[0,&quot;Infraestructura&quot;],&quot;categoria&quot;:[0,&quot;&quot;],&quot;bestseller&quot;:[0,false],&quot;banner&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1720469800/courses/docker/banner/docker.jpg&quot;],&quot;badge&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1701878258/courses/docker/badge/docker.svg&quot;],&quot;devtalles_exclusive&quot;:[0,0],&quot;instructorId&quot;:[0,1]}],[0,{&quot;id&quot;:[0,&quot;patrones&quot;],&quot;etiquetas&quot;:[0,&quot;patrones, singleton, factory, observable&quot;],&quot;curso&quot;:[0,&quot;Patrones de Diseño: Soluciones prácticas y eficientes&quot;],&quot;cuponDev&quot;:[0,&quot;https://cursos.devtalles.com/courses/patrones-diseno?coupon=NOVIEMBRE-2025&quot;],&quot;cupon&quot;:[0,&quot;https://www.udemy.com/course/patrones-diseno/?couponCode=NOVIEMBRE-2025&quot;],&quot;slug&quot;:[0,&quot;patrones-de-diseno&quot;],&quot;obj&quot;:[0,&quot;¡24 Patrones de Diseño para resolver problemas comunes al programar, además de escribir código más limpio y escalable!&quot;],&quot;pago&quot;:[0,1],&quot;prioridad&quot;:[0,1],&quot;tipo&quot;:[0,&quot;curso&quot;],&quot;latest&quot;:[0,0],&quot;queryCourse&quot;:[0,null],&quot;enPortada&quot;:[0,0],&quot;lessons&quot;:[0,0],&quot;students&quot;:[0,0],&quot;reviews&quot;:[0,0],&quot;vigente&quot;:[0,1],&quot;youtube&quot;:[0,&quot;EaOXiDin49s&quot;],&quot;category&quot;:[0,&quot;Desarrollo Web&quot;],&quot;categoria&quot;:[0,&quot;&quot;],&quot;bestseller&quot;:[0,false],&quot;banner&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1734987523/courses/patrones/banner/patrones.jpg&quot;],&quot;badge&quot;:[0,&quot;https://res.cloudinary.com/dl1k2dee0/image/upload/v1734987524/courses/patrones/badge/patrones.svg&quot;],&quot;devtalles_exclusive&quot;:[0,0],&quot;instructorId&quot;:[0,1]}]]],&quot;data-astro-transition-persist&quot;:[0,&quot;astro-r63cp6c6-7&quot;]}\" ssr client=\"idle\" opts=\"{&quot;name&quot;:&quot;HeaderSearch&quot;,&quot;value&quot;:true}\" data-astro-transition-persist=\"astro-r63cp6c6-7\" await-children><div data-hk=s00000 class=\"rbt-search-dropdown\"><div class=\"wrapper\"><div class=\"row\"><div class=\"col-lg-12\"><form><input type=\"text\" name=\"query\" value=\"\" class=\"global-search\" placeholder=\"¿Qué deseas buscar?\" autofocus><div class=\"submit-btn\"><button type=\"submit\" class=\"rbt-btn btn-gradient btn-md\">Buscar</button></div></form></div></div><div class=\"rbt-separator-mid\"><hr class=\"rbt-separator m-0\"></div><div class=\"row g-4 pt--30 pb--60\"><div class=\"col-lg-12\"><div class=\"section-title\"><h5 class=\"rbt-title-style-2\" style=\"height:25px\"> <!--$--><!--/--> </h5></div></div><!--$--><div data-hk=s0000100 class=\"col-lg-3 col-md-4 col-sm-6 col-12\"><div class=\"rbt-card variation-01 rbt-hover\"><div class=\"rbt-card-img\"><a href=\"/course/nest-backend-escalable\" class=\"search-trigger-active\"><img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_200,h_110,f_webp/v1720472410/courses/nest/banner/nest.jpg\" alt=\"Nest: Desarrollo backend escalable con Node\" width=\"200\" height=\"150\"></a></div><div class=\"rbt-card-body\"><h5 class=\"rbt-card-title\"><a href=\"/course/nest-backend-escalable\" class=\"search-trigger-active\"><span data-hk=s0000101 class=\"fs-3\"><!--$-->Nest<!--/-->:<br><small> Desarrollo backend escalable con Node</small></span></a></h5><div class=\"rbt-review\"><div class=\"rating\"><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i></div><!--$--><!--/--></div><div class=\"rbt-card-bottom\"><div class=\"rbt-price\"><span data-hk=s0000102 class=\"current-price\">$10-20</span><span data-hk=s0000103 class=\"off-price\">$200</span></div></div></div></div></div><div data-hk=s0000110 class=\"col-lg-3 col-md-4 col-sm-6 col-12\"><div class=\"rbt-card variation-01 rbt-hover\"><div class=\"rbt-card-img\"><a href=\"/course/pricipios-solid-cleancode\" class=\"search-trigger-active\"><img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_200,h_110,f_webp/v1720473870/courses/solid/banner/solid.jpg\" alt=\"Principios:  SOLID y Clean Code\" width=\"200\" height=\"150\"></a></div><div class=\"rbt-card-body\"><h5 class=\"rbt-card-title\"><a href=\"/course/pricipios-solid-cleancode\" class=\"search-trigger-active\"><span data-hk=s0000111 class=\"fs-3\"><!--$-->Principios<!--/-->:<br><small>  SOLID y Clean Code</small></span></a></h5><div class=\"rbt-review\"><div class=\"rating\"><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i></div><!--$--><!--/--></div><div class=\"rbt-card-bottom\"><div class=\"rbt-price\"><span data-hk=s0000112 class=\"current-price\">$10-20</span><span data-hk=s0000113 class=\"off-price\">$200</span></div></div></div></div></div><div data-hk=s0000120 class=\"col-lg-3 col-md-4 col-sm-6 col-12\"><div class=\"rbt-card variation-01 rbt-hover\"><div class=\"rbt-card-img\"><a href=\"/course/docker-guia-practica\" class=\"search-trigger-active\"><img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_200,h_110,f_webp/v1720469800/courses/docker/banner/docker.jpg\" alt=\"Docker: Guía práctica de uso para desarrolladores\" width=\"200\" height=\"150\"></a></div><div class=\"rbt-card-body\"><h5 class=\"rbt-card-title\"><a href=\"/course/docker-guia-practica\" class=\"search-trigger-active\"><span data-hk=s0000121 class=\"fs-3\"><!--$-->Docker<!--/-->:<br><small> Guía práctica de uso para desarrolladores</small></span></a></h5><div class=\"rbt-review\"><div class=\"rating\"><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i></div><!--$--><!--/--></div><div class=\"rbt-card-bottom\"><div class=\"rbt-price\"><span data-hk=s0000122 class=\"current-price\">$10-20</span><span data-hk=s0000123 class=\"off-price\">$200</span></div></div></div></div></div><div data-hk=s0000130 class=\"col-lg-3 col-md-4 col-sm-6 col-12\"><div class=\"rbt-card variation-01 rbt-hover\"><div class=\"rbt-card-img\"><a href=\"/course/patrones-de-diseno\" class=\"search-trigger-active\"><img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_200,h_110,f_webp/v1734987523/courses/patrones/banner/patrones.jpg\" alt=\"Patrones de Diseño: Soluciones prácticas y eficientes\" width=\"200\" height=\"150\"></a></div><div class=\"rbt-card-body\"><h5 class=\"rbt-card-title\"><a href=\"/course/patrones-de-diseno\" class=\"search-trigger-active\"><span data-hk=s0000131 class=\"fs-3\"><!--$-->Patrones de Diseño<!--/-->:<br><small> Soluciones prácticas y eficientes</small></span></a></h5><div class=\"rbt-review\"><div class=\"rating\"><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i><i class=\"fas fa-star\"></i></div><!--$--><!--/--></div><div class=\"rbt-card-bottom\"><div class=\"rbt-price\"><span data-hk=s0000132 class=\"current-price\">$10-20</span><span data-hk=s0000133 class=\"off-price\">$200</span></div></div></div></div></div><!--/--></div></div></div><!--astro:end--></astro-island>  </div> </header> <script type=\"module\" src=\"/_astro/MainHeader.astro_astro_type_script_index_0_lang.Kq2o63oI.js\"></script> <!-- Mobile Menu Section --> <div id=\"mobile-menu\" class=\"popup-mobile-menu\"> <div class=\"inner-wrapper\"> <div class=\"inner-top\"> <div class=\"content\"> <div class=\"logo\"> <!-- <FernandoLogo /> --> <a href=\"/\" class=\"logo-gradient\"> Fernando-Herrera </a> </div> <div class=\"rbt-btn-close\"> <button class=\"close-button rbt-round-btn\"> <i class=\"feather-x\"></i> </button> </div> </div> <p class=\"description\">\nSaludos, <br>\nEspero que tengas un excelente día, recuerda que si me quieres contactar,\n        lo mejor es escribir a:\n</p> <ul class=\"navbar-top-left rbt-information-list justify-content-start\"> <li> <a href=\"/cdn-cgi/l/email-protection#a1d2ced1ced3d5c4e1c5c4d7d5c0cdcdc4d28fc2cecc\"> <i class=\"feather-mail\"></i><span class=\"__cf_email__\" data-cfemail=\"285b4758475a5c4d684c4d5e5c4944444d5b064b4745\">[email&#160;protected]</span>\n</a> </li> <li> <a target=\"_blank\" href=\"https://twitter.com/DevTalles\"> <i class=\"feather-twitter\"></i>@DevTalles\n</a> </li> </ul> </div> <nav class=\"mainmenu-nav\"> <ul class=\"mainmenu\"> <li class=\"position-static\"> <a href=\"/auth/login/\">Ingresar </a> </li> <!-- <li class=\"position-static\">\n          <a href=\"/auth/login/\">Ingresar </a>\n        </li> --> <li class=\"position-static\"> <a href=\"/\">Home</a> </li> <li class=\"position-static\"> <a href=\"/courses\">Cursos</a> </li> <li class=\"position-static\"> <a href=\"/\">Historia</a> </li> <li class=\"has-menu-child-item\"> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/programas-react\">\nProgramas\n</a> </li>  <li> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/mas-talento\">\nHojas de atajos\n</a> </li>  <li> <a target=\"_blank\" href=\"https://www.udemy.com/user/550c38655ec11/\">\nPerfil de Udemy\n</a> </li> <li> <a href=\"/top-50/\">Top 50 - Alumnos </a> </li> <div class=\"col-lg-12 col-xl-4 col-xxl-4 single-mega-item\"> <div class=\"rbt-ads-wrapper\"> <a class=\"d-block\" href=\"#\"> <img src=\"/_image?href=%2F_astro%2Fastronaut-1.DwOLdmP7.jpg&#38;w=300&#38;h=300&#38;f=webp\" alt=\"Astronaut\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"300\" height=\"300\"> </a> </div> </div> </ul> </nav> <div class=\"mobile-menu-bottom\"> <div class=\"rbt-btn-wrapper mb--20\"> <a class=\"rbt-btn btn-border-gradient radius-round btn-sm hover-transform-none w-100 justify-content-center text-center\" href=\"/courses/\"> <span>Ver cursos con cupones</span> </a> </div> <div class=\"social-share-wrapper\"> <span class=\"rbt-short-title d-block\">Más sobre mi</span> <ul class=\"social-icon social-default transparent-with-border justify-content-center mt--20\"> <li> <a target=\"_blank\" href=\"https://twitter.com/Fernando_Her85\"><i class=\"fab fab fa-twitter\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.linkedin.com/in/fernando-herrera-b6b204200/\"><i class=\"fab fab fa-linkedin-in\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.instagram.com/fernando_her85/\"><i class=\"fab fab fa-instagram\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.youtube.com/@devtalles\"><i class=\"fab fab fa-youtube\"></i></a> </li><li> <a target=\"_blank\" href=\"https://podcasters.spotify.com/pod/show/fernando-her85\"><i class=\"fab fab fa-spotify\"></i></a> </li><li> <a target=\"_blank\" href=\"https://discord.com/invite/pBjEVYTC7t\"><i class=\"fab fab fa-discord\"></i></a> </li> </ul> </div> </div> </div> </div> <script data-cfasync=\"false\" src=\"/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js\"></script><script type=\"module\" src=\"/_astro/MobileMenu.astro_astro_type_script_index_0_lang.zo6OaPlS.js\"></script> <!-- Main body --> <main class=\"rbt-main-wrapper\">     <div class=\"rbt-banner-area rbt-banner-1\"> <div class=\"container-fluid\"> <div class=\"row\"> <div class=\"col-md-12 pb--120 pt--70\"> <div class=\"content\"> <div class=\"inner\"> <div class=\"rbt-new-badge rbt-new-badge-one\"> <span class=\"rbt-new-badge-icon mr-2\">🏆 </span> Último curso publicado\n</div> <h1 class=\"title\"> Java:\n<br>  Spring Boot - Guía definitiva </h1> <p class=\"description\"> Aprende Spring Boot desde cero con Gabriel Chaldú: inicia con Spring MVC y Thymeleaf creando un sitio web dinámico con JdbcTemplate y controladores básicos. ¡Luego desarrolla un API REST con seguridad, JPA, relaciones en BD y buenas prácticas MVC y mucho más! </p> <div class=\"slider-btn\"> <a href=\"course/spring-boot\" class=\"rbt-btn btn-gradient hover-icon-reverse\"> <span class=\"icon-reverse-wrapper\"> <span class=\"btn-text\">Ver curso</span> <span class=\"btn-icon\"><i class=\"feather-arrow-right\"></i></span> <span class=\"btn-icon\"><i class=\"feather-arrow-right\"></i></span> </span> </a> </div> </div> <div class=\"shape-wrapper\" id=\"scene\"> <img src=\"/_image?href=%2F_astro%2Fastronaut-2.etxQw8xY.png&#38;w=330&#38;h=330&#38;f=webp\" alt=\"Hero Image\" style=\"width:330px\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"330\" height=\"330\"> <div class=\"hero-bg-shape-2 layer\" data-depth=\"0.4\"> <img src=\"/assets/images/shape/shape-02.png\" alt=\"Hero Image Background Shape\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"200\" height=\"200\"> </div> </div> <div class=\"banner-card pb--60 mb--50 swiper rbt-dot-bottom-center banner-swiper-active\"> <div class=\"swiper-wrapper\"> <div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/spring-boot\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1761932876/courses/spring-boot/banner/spring-boot.jpg\" alt=\"Java: Spring Boot - Guía definitiva\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/spring-boot\"> <span class>Java:\n<br><small> Spring Boot - Guía definitiva</small></span> </a> </h4> <p class=\"rbt-card-text\">Aprende Spring Boot desde cero con Gabriel Chaldú: inicia con Spring MVC y Thymeleaf creando un siti...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/spring-boot\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/netfullstack\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1761932537/courses/new/banner/new.jpg\" alt=\".NET Fullstack: Arquitectura limpia al frontend y Blazor\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/netfullstack\"> <span class>.NET Fullstack:\n<br><small> Arquitectura limpia al frontend y Blazor</small></span> </a> </h4> <p class=\"rbt-card-text\">¡Aprende desarrollo web Fullstack con C# y .NET Core de la mano de Teddy Paz! Domina Clean Architect...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/netfullstack\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/react-cero-experto\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1754600053/courses/react/banner/react.jpg\" alt=\"React: De cero a experto \" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\"> <li> <i class=\"feather-book\"></i> 503 Lecciones\n</li> <li> <i class=\"feather-users\"></i> 70K Estudiantes\n</li> </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/react-cero-experto\"> <span class>React:\n<br><small> De cero a experto </small></span> </a> </h4> <p class=\"rbt-card-text\">¡En este curso de React aprenderás desde los fundamentos de la librería hasta aspectos técnicos avan...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div> <span class=\"rating-count\">  \n(20K Reseñas)\n</span> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/react-cero-experto\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/n8n-mcp\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1761761778/courses/n8n-mcp/banner/n8n-mcp.jpg\" alt=\"n8n + MCP: Automatización y agentes de IA inteligentes\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/n8n-mcp\"> <span class>n8n + MCP:\n<br><small> Automatización y agentes de IA inteligentes</small></span> </a> </h4> <p class=\"rbt-card-text\">¡Aprende a crear automatizaciones poderosas con n8n: desde flujos simples con Google Sheets y correo...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/n8n-mcp\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/net-backend\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1753721900/courses/net-backend/banner/net-backend.jpg\" alt=\".NET Backend: .NET Core, SQL Server y seguridad JWT\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/net-backend\"> <span class>.NET Backend:\n<br><small> .NET Core, SQL Server y seguridad JWT</small></span> </a> </h4> <p class=\"rbt-card-text\">¡Construye desde cero una API RESTful profesional en .NET para un e-commerce real! Aprende sobre JWT...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/net-backend\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/django\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1758131536/courses/django/banner/django.jpg\" alt=\"Django: Crea aplicaciones web robustas con Python\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/django\"> <span class>Django:\n<br><small> Crea aplicaciones web robustas con Python</small></span> </a> </h4> <p class=\"rbt-card-text\">¡Aprende Django desde las bases con este curso práctico! Crea sitios web, conecta bases de datos, de...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/django\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"swiper-slide\"> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"course/python\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_150,f_webp/v1744213574/courses/python/banner/python.jpg\" alt=\"Python: Fundamentos hasta los detalles\" width=\"250\" height=\"150\"> <!-- <Image\n          format=\"webp\"\n          src={course.banner}\n          alt={course.curso}\n          width={250}\n          height={150}\n        /> -->  </a> </div> <div class=\"rbt-card-body\"> <ul class=\"rbt-meta\">   </ul> <h4 class=\"rbt-card-title fs-2\"> <a href=\"/course/python\"> <span class>Python:\n<br><small> Fundamentos hasta los detalles</small></span> </a> </h4> <p class=\"rbt-card-text\">Curso impartido por el instructor Ricardo Cuéllar - Aprende Aprende las bases de Python: variables, ...</p> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-a\" href=\"/course/python\">\nSaber más\n<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div> </div> <div class=\"rbt-swiper-pagination\"></div> </div> </div> </div> </div> </div> </div>   <div class=\"rbt-featured-course bg-color-white rbt-section-gap\"> <div class=\"container\"> <div class=\"row g-5 align-items-end mb--60\"> <div class=\"col-lg-6 col-md-12 col-12\"> <div class=\"section-title text-start\"> <h2 class=\"title\">Cursos destacados</h2> <p class=\"description mt--20\">Importantes, destacados o recomendados por la comunidad.</p> </div> </div> <div class=\"col-lg-6 col-md-12 col-12\"> <div class=\"load-more-btn text-start text-lg-end\"> <a href=\"/courses\" class=\"rbt-btn btn-border icon-hover radius-round\"> <span class=\"btn-text\">Ver todos los cursos</span> <span class=\"btn-icon\"> <i class=\"feather-arrow-right\"></i> </span> </a> </div> </div> </div>  <div class=\"row g-5\"> <div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/nest-backend-escalable\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1720472410/courses/nest/banner/nest.jpg\" alt=\"Nest: Desarrollo backend escalable con Node\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-1\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/nest-backend-escalable\"> <span class>Nest:\n<br><small> Desarrollo backend escalable con Node</small></span> </a> </h4>  <p class=\"rbt-card-text\">Nest es un framework de node extensible, versátil y progresivo, el cual nos ofrece la columna verteb...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Ffernando.Bfmj1PVD.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 1\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Fernado Herrera</strong> en  <a href=\"/courses/?category=Backend\"> Backend </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-link\" href=\"/course/nest-backend-escalable\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/pricipios-solid-cleancode\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1720473870/courses/solid/banner/solid.jpg\" alt=\"Principios:  SOLID y Clean Code\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-2\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/pricipios-solid-cleancode\"> <span class>Principios:\n<br><small>  SOLID y Clean Code</small></span> </a> </h4>  <p class=\"rbt-card-text\">Si hablamos de diseño y desarrollo de aplicaciones, Los principios S.O.L.I.D. son unas palabras que ...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Ffernando.Bfmj1PVD.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 1\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Fernado Herrera</strong> en  <a href=\"/courses/?category=Infraestructura\"> Infraestructura </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-link\" href=\"/course/pricipios-solid-cleancode\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/docker-guia-practica\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1720469800/courses/docker/banner/docker.jpg\" alt=\"Docker: Guía práctica de uso para desarrolladores\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-3\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/docker-guia-practica\"> <span class>Docker:\n<br><small> Guía práctica de uso para desarrolladores</small></span> </a> </h4>  <p class=\"rbt-card-text\">Aquí aprenderás Docker y para qué te puede servir, aprende a utilizar y crear imágenes, controlar el...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Ffernando.Bfmj1PVD.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 1\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Fernado Herrera</strong> en  <a href=\"/courses/?category=Infraestructura\"> Infraestructura </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-link\" href=\"/course/docker-guia-practica\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/patrones-de-diseno\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1734987523/courses/patrones/banner/patrones.jpg\" alt=\"Patrones de Diseño: Soluciones prácticas y eficientes\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-4\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/patrones-de-diseno\"> <span class>Patrones de Diseño:\n<br><small> Soluciones prácticas y eficientes</small></span> </a> </h4>  <p class=\"rbt-card-text\">¡24 Patrones de Diseño para resolver problemas comunes al programar, además de escribir código más l...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Ffernando.Bfmj1PVD.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 1\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Fernado Herrera</strong> en  <a href=\"/courses/?category=Desarrollo Web\"> Desarrollo Web </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-link\" href=\"/course/patrones-de-diseno\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/spring-boot\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1761932876/courses/spring-boot/banner/spring-boot.jpg\" alt=\"Java: Spring Boot - Guía definitiva\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-5\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/spring-boot\"> <span class>Java:\n<br><small> Spring Boot - Guía definitiva</small></span> </a> </h4>  <p class=\"rbt-card-text\">Aprende Spring Boot desde cero con Gabriel Chaldú: inicia con Spring MVC y Thymeleaf creando un siti...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Fgabriel.DYH9nYwc.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 3\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Gabriel Chaldú</strong> en  <a href=\"/courses/?category=Backend\"> Backend </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\">  <span class=\"current-price\">$10-20</span> <span class=\"off-price\">$200</span>  </div> <a class=\"rbt-btn-link\" href=\"/course/spring-boot\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div><div class=\"col-lg-4 col-md-6 col-sm-12 col-12\"> <!-- data-sal-delay=\"150\"\n  data-sal=\"slide-up\"\n  data-sal-duration=\"800\" --> <div class=\"rbt-card variation-01 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/react-router\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_250,h_140,f_webp/v1747077221/courses/react-router/banner/react-router.jpg\" alt=\"React Router: Navegación declarativa y framework\" width=\"250\" height=\"100\" data-astro-transition-scope=\"astro-565hgp22-6\">  </a> </div> <div class=\"rbt-card-body\"> <div class=\"rbt-card-top\"> <div class=\"rbt-review\"> <div class=\"rating\"> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> <i class=\"fas fa-star\"></i> </div>  </div>  </div> <h4 class=\"rbt-card-title\"> <a href=\"/course/react-router\"> <span class>React Router:\n<br><small> Navegación declarativa y framework</small></span> </a> </h4>  <p class=\"rbt-card-text\">Aprende a trabajar con React Router tanto como librería para proyectos tipo SPA o trabajarlo cómo Fr...</p> <div class=\"rbt-author-meta mb--10\"> <div class=\"rbt-avater\"> <img src=\"/_image?href=%2F_astro%2Ffernando.Bfmj1PVD.jpg&#38;w=150&#38;h=150&#38;f=webp\" alt=\"Instructor 1\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"150\" height=\"150\"> </div> <div class=\"rbt-author-info\">\nPor <strong>Fernado Herrera</strong> en  <a href=\"/courses/?category=Backend\"> Backend </a> </div> </div> <div class=\"rbt-card-bottom\"> <div class=\"rbt-price\"> <span class=\"current-price\">Gratis</span> </div> <a class=\"rbt-btn-link\" href=\"/course/react-router\">\nSaber más<i class=\"feather-arrow-right\"></i> </a> </div> </div> </div> </div> </div>  </div> </div>   <div class=\"rbt-counterup-area bg-color-extra2 rbt-section-gapBottom default-callto-action-overlap\"> <div class=\"container\"> <div class=\"row mb--60\"> <div class=\"col-lg-12\"> <div class=\"section-title text-center\"> <span class=\"subtitle bg-primary-opacity\">¿Por qué estudiar conmigo?</span> <h2 class=\"title\">\nUna comunidad muy grande <br> con estudiantes de todo el mundo.\n</h2> </div> </div> </div> <div class=\"row g-5 hanger-line\">  <div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <div class=\"rbt-counterup rbt-hover-03 border-bottom-gradient\"> <div class=\"top-circle-shape\"></div> <div class=\"inner\"> <div class=\"rbt-round-icon\"> <img src=\"/assets/images/icons/counter-01.png\" alt=\"Icons Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h3 class=\"counter\"> <span class=\"odometer\" data-count=\"595000\">00</span> </h3> <span class=\"subtitle\">Estudiantes y contando</span> </div> </div> </div> </div>   <div class=\"col-lg-3 col-md-6 col-sm-6 col-12 mt--60 mt_md--30 mt_sm--30 mt_mobile--60\"> <div class=\"rbt-counterup rbt-hover-03 border-bottom-gradient\"> <div class=\"top-circle-shape\"></div> <div class=\"inner\"> <div class=\"rbt-round-icon\"> <img src=\"/assets/images/icons/counter-02.png\" alt=\"Icons Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h3 class=\"counter\"> <span class=\"odometer\" data-count=\"50\">00</span> </h3> <span class=\"subtitle\">Cursos creados</span> </div> </div> </div> </div>   <div class=\"col-lg-3 col-md-6 col-sm-6 col-12 mt_md--60 mt_sm--60\"> <div class=\"rbt-counterup rbt-hover-03 border-bottom-gradient\"> <div class=\"top-circle-shape\"></div> <div class=\"inner\"> <div class=\"rbt-round-icon\"> <img src=\"/assets/images/icons/counter-03.png\" alt=\"Icons Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h3 class=\"counter\"> <span class=\"odometer\" data-count=\"10000\">00</span> </h3> <span class=\"subtitle\">Horas de video generado</span> </div> </div> </div> </div>   <div class=\"col-lg-3 col-md-6 col-sm-6 col-12 mt--60 mt_md--30 mt_sm--30 mt_mobile--60\"> <div class=\"rbt-counterup rbt-hover-03 border-bottom-gradient\"> <div class=\"top-circle-shape\"></div> <div class=\"inner\"> <div class=\"rbt-round-icon\"> <img src=\"/assets/images/icons/star.png\" alt=\"Icons Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h3 class=\"counter\"> <span class=\"odometer\" data-count=\"4.8\">00</span> </h3> <span class=\"subtitle\">Calificación promedio</span> </div> </div> </div> </div>  </div> </div> </div>   <div class=\"rbt-testimonial-area bg-color-white rbt-section-gap overflow-hidden\"> <div class=\"wrapper\"> <div class=\"container\"> <div class=\"row\"> <div class=\"col-lg-12\"> <div class=\"section-title text-center\"> <span class=\"subtitle bg-primary-opacity\">Educación para todo el mundo</span> <h2 class=\"title\">\nA las personas les gustan mis cursos\n<br> <small>Aquí unos comentarios!</small> </h2> </div> </div> </div> </div> </div> <div class=\"scroll-animation-wrapper mt--50\"> <div class=\"scroll-animation scroll-right-left\">  <div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Luis Roberto N</h5> <span>Flutter Móvil: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Aprendí de los cursos de Fernando Herrera, lejos un de los mejores profesores que he tenido, gracias a lo que aprendí ya llevo dos app&#39;s con distintas versiones implementadas en mi trabajo. Altamente recomendable!!!</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Alfredo R</h5> <span>Flutter Móvil: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Simplemente los mejores cursos de toda la plataforma, el profe Fernando explica de manera magistral, se ve que el contenido del curso está pulido de inicio a fin.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Steven Xavier G</h5> <span>Flutter Móvil: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Excelente curso. Mucha información clara y detallada. Fernando es un gran instructor!! Hace que cada sección (aún con conceptos complejos) sea aprendida de manera simple.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Nicholas Gabriel Mendez B.</h5> <span>Flutter Móvil: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Coming from React native, and flutter feels like magic, not sure if my approach to this technology is better than any other tech that I decided to learn in the past because flutter is easier, or because surely Fernando Herrera is the best instructor I have ever found on Udemy.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">David Alberto Sanchez M</h5> <span>Flutter Móvil: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Excelente, algunas cosas complicadas como lo de arquitectura limpia, que al comienzo para que tanto, pero conforme lo desarrolla el Docente Fernando Herrera, y se va trabajando uno lo va asimilando, si que un curso sumamente bueno, muy recomendado.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Nicolas R.</h5> <span>Next.js: El framework de React para producción</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Fernando es un excelente profesor. Me atrevo a decir sin ningun temor que es, indiscutiblemente y objetivamente, el mejor profesor que tiene Udemy en Español</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Marck Dylan Herrera S.</h5> <span>Next.js: El framework de React para producción</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Me fue super útil para mi trabajo actual como jr, tambien me gusta mucho la forma en que llevo el curso Fernando Herrera y todo lo del proyecto final bien podría llevarse a un proyecto profesional</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Marck Dylan Herrera S.</h5> <span>Next.js: El framework de React para producción</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Me fue super útil para mi trabajo actual como jr, también me gusta mucho la forma en que llevo el curso Fernando Herrera y todo lo del proyecto final bien podría llevarse a un proyecto profesional</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Kevin Baca A.</h5> <span>NodeJS: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Profe Fernando una vez dando un curso magistral, me encanto como se vio la arquitectura limpia y los patrones para escalabilidad en las apps de Node, muchas gracias pofe!</p> </div> </div> </div> </div>  </div> </div> <div class=\"scroll-animation-wrapper mt--30\"> <div class=\"scroll-animation scroll-left-right\">  <div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Nicolas Andres L.</h5> <span>NodeJS: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Como siempre impagable la enseñanza de este gran Mentor!! Hace años que compro sus cursos y me ayudaron en mi carrera siempre!! EL curso como siempre una genialidad</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Francisco L.</h5> <span>Angular: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Fantástico curso de Angular y excelente profesor.\r\n\r\nGracias a Fernando y a su equipo por el contenido del curso y la rapidez\r\n\r\nen la resolución de dudas y problemas que me he encontrado durante el curso.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Martin Tomas Vivanco M.</h5> <span>Angular: De cero a experto</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Excelente curso para iniciar en Angular , todo estaba bien explicado excepto por la parte de Guards que se actualizaron y gracias a las preguntas por parte de otros alumnos y profesores auxiliares pude aprender, pero los interceptores no hubo, ya que yo uso Spring Boot como backend era necesario ese aspecto.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Gabriel Alejandro G.</h5> <span>React Native CLI: Aplicaciones nativas para IOS y Android</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Un material indispensable a la hora de aprender, va de menos a más como siempre. Muy completo y la calidad es excelente, una gran inversión!!\r\n\r\nLos cursos de Fernando tienen una gran dedicación y eso se puede apreciar en cada uno de ellos, el dictado del curso se hace muy fácil de seguir.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Alejandro D.</h5> <span>React: De cero a experto </span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Otro excelente curso de Fernando Herrera. En mi caso, vengo de muchos años en el mundo PHP y me ha sido super útil para actualizarme con React.\r\n\r\nEl curso es extenso y requiere mucho tiempo y dedicación, pero vale la pena hacerlo.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Eric P.</h5> <span>React: De cero a experto </span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Un curso en el que aprendes todo tipo de cosas en React, muchas de las cosas aquí aprendidas las he aplicado en mi trabajo, totalmente recomendado si quieres entrar en el mundo del desarrollo con React.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Silvia R.</h5> <span>React: De cero a experto </span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Excelente curso, muy bien explicado tanto para aprender desde cero como para afianzar conocimientos. Recomendable 100% como todos los cursos de Fernando.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Fernando C.</h5> <span>Nest: Desarrollo backend escalable con Node</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Es el mejor curso que he tomado en esta y otras plataformas, Fernando entrega un máterial de ayuda y un código perfectamente estructurado y las explicaciones del profesor lo llevan desde un nivel básico hasta un nivel avanzado de la mejor forma. Se nota que el profesor disfruta el trabajo que hace con estos cursos por que lo hace de la mejor manera, si alguien toma este curso es seguro que desee tomar más cursos con el mismo profesor, vale cada centavo y cada segundo que se invierte.</p> </div> </div> </div> </div><div class=\"single-column-20\"> <div class=\"rbt-testimonial-box\"> <div class=\"inner\"> <div class=\"d-flex\"> <div class=\"client-info\"> <h5 class=\"title\">Juan Grimaldo P.</h5> <span>Nest: Desarrollo backend escalable con Node</span> </div> </div> <div class=\"description\"> <p class=\"subtitle-3\">Realmente disfrute aprender nest con este curso. Fernando lo explica de una manera muy clara y progresiva haciendo muy ameno el tiempo para aprender este framework.</p> </div> </div> </div> </div>  </div> </div> </div>   <div class=\"rbt-about-area bg-color-extra2 rbt-section-gapTop pb_md--80 pb_sm--80 about-style-1\"> <div class=\"container\"> <div class=\"row g-5 align-items-center\"> <div class=\"col-lg-6\"> <div class=\"thumbnail-wrapper\"> <div class=\"thumbnail image-1\"> <img src=\"/_image?href=%2F_astro%2Fhistory-01.Bd0uEkus.jpg&#38;w=400&#38;h=490&#38;f=webp\" data-parallax=\"{&#34;x&#34;: 0, &#34;y&#34;: -20}\" alt=\"Education Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"400\" height=\"490\"> </div> <div class=\"thumbnail image-2 d-none d-xl-block\"> <img src=\"/_image?href=%2F_astro%2Fhistory-02.DmkHBiAc.jpg&#38;w=280&#38;h=250&#38;f=webp\" data-parallax=\"{&#34;x&#34;: 0, &#34;y&#34;: 80}\" alt=\"Education Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"280\" height=\"250\"> </div> <div class=\"thumbnail image-3 d-none d-md-block\"> <img src=\"/_image?href=%2F_astro%2Fhistory-03.B54e8OmA.jpg&#38;w=490&#38;h=500&#38;f=webp\" data-parallax=\"{&#34;x&#34;: 0, &#34;y&#34;: 60}\" alt=\"Education Images\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"490\" height=\"500\"> </div> </div> </div> <div class=\"col-lg-6\"> <div class=\"inner pl--50 pl_sm--0 pl_md--0\"> <div class=\"section-title text-start\"> <span class=\"subtitle bg-coral-opacity\">Sobre mi</span> <h2 class=\"title\">\nMucho gusto <br> <small>Soy Fernando Herrera</small> </h2> </div> <p class=\"description mt--30\">\nSoy un fullstack developer con muchos años de experiencia en el\n            desarrollo de aplicaciones web y móviles. Me encanta enseñar y\n            compartir mis conocimientos con la comunidad.\n</p> <!-- Start Feature List  --> <div class=\"rbt-feature-wrapper mt--20 ml_dec_20\"> <div class=\"rbt-feature feature-style-2 rbt-radius\"> <div class=\"icon bg-pink-opacity\"> <i class=\"feather-heart\"></i> </div> <div class=\"feature-content\"> <h6 class=\"feature-title\">Fundador de DevTalles</h6> <p class=\"feature-description\">\nUna plataforma y comunidad de aprendizaje para desarrolladores\n                  móviles y web.\n</p> </div> </div> <div class=\"rbt-feature feature-style-2 rbt-radius\"> <div class=\"icon bg-primary-opacity\"> <i class=\"feather-book\"></i> </div> <div class=\"feature-content\"> <h6 class=\"feature-title\">Instructor partner de Udemy</h6> <p class=\"feature-description\">\nEstoy entre el top 5 de instructores en español en la\n                  plataforma y con calificación promedio de 4.8+ de 5.\n</p> </div> </div> </div> </div> </div> </div> </div> </div>   <div class=\"rbt-categories-area bg-color-white rbt-section-gapBottom mt-5\"> <div class=\"container\"> <div class=\"row\"> <div class=\"col-lg-12\"> <div class=\"section-title text-center\"> <span class=\"subtitle bg-primary-opacity\">Categorías</span> <h2 class=\"title\">\nExplora los cursos\n<br> <small>por categorías de interés.</small> </h2> </div> </div> </div> <div class=\"row g-5 mt--20\"> <div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=JavaScript\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/javascript.svg\" alt=\"JavaScript logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">JavaScript</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=TypeScript\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/typescript.svg\" alt=\"TypeScript logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">TypeScript</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=Angular\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/angular.svg\" alt=\"Angular logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">Angular</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=React\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/react.svg\" alt=\"React logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">React</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=Flutter\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/flutter.svg\" alt=\"Flutter logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">Flutter</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=Node\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/nodejs.svg\" alt=\"NodeJS logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">NodeJS</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=Mobile\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/mobile.svg\" alt=\"Móvil logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">Móvil</h5>  </div> </div> </a> </div><div class=\"col-lg-3 col-md-6 col-sm-6 col-12\"> <a class=\"rbt-cat-box rbt-cat-box-1 text-center\" href=\"/courses/?category=Web\"> <div class=\"inner\"> <div class=\"icons\"> <img src=\"/assets/images/logos/web.svg\" alt=\"Web logo\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"auto\" width=\"100\" height=\"100\"> </div> <div class=\"content\"> <h5 class=\"title\">Web</h5>  </div> </div> </a> </div> </div> </div> </div>   <div class=\"rbt-rbt-card-area rbt-section-gap bg-color-extra2\"> <div class=\"container\"> <div class=\"row row--15 align-items-center mb--30\"> <div class=\"col-lg-12\"> <div class=\"section-title\"> <h2 class=\"title\">Cursos gratuitos recomendados</h2> </div> </div> </div>  <div class=\"row row--15\">  <div class=\"col-lg-6 col-md-12 col-sm-12 col-12 mt--30\" data-sal-delay=\"150\" data-sal=\"slide-up\" data-sal-duration=\"800\"> <div class=\"rbt-card height-330 variation-02 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/react-router\"> <img src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_350,h_197,f_webp/v1747077221/courses/react-router/banner/react-router.jpg\" alt=\"React Router: Navegación declarativa y framework\" width=\"350\" height=\"197\"> <div class=\"rbt-default-badge\"> <span>Recomendado</span> </div> </a> </div> <div class=\"rbt-card-body\"> <h4 class=\"rbt-card-title\"> <a href=\"/course/react-router\"> <span class>React Router:\n<br><small> Navegación declarativa y framework</small></span> </a> </h4> <p class=\"rbt-card-text\">React Router: Navegación declarativa y framework</p> <div class=\"rbt-card-bottom\"> <a class=\"transparent-button\" href=\"/course/react-router\">\nSaber más<i><svg width=\"17\" height=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><g stroke=\"#27374D\" fill=\"none\" fill-rule=\"evenodd\"><path d=\"M10.614 0l5.629 5.629-5.63 5.629\"></path><path stroke-linecap=\"square\" d=\"M.663 5.572h14.594\"></path></g></svg></i> </a> </div> </div> </div> </div>  <div class=\"col-lg-6 col-md-12 col-sm-12 col-12 mt--30\" data-sal-delay=\"150\" data-sal=\"slide-up\" data-sal-duration=\"800\">  <div class=\"rbt-card card-list variation-02 rbt-hover\"> <div class=\"rbt-card-img\"> <a href=\"/course/shadcn-ui\"> <img width=\"290\" height=\"150\" src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_290,h_150,f_webp/v1720473850/courses/shadcn-ui/banner/shadcn-ui.jpg\" alt=\"Shadcn/ui: Componentes accesibles y personalizables\"> </a> </div> <div class=\"rbt-card-body\"> <h5 class=\"rbt-card-title\"> <a href=\"/course/shadcn-ui\"> <span class=\"fs-3\">Shadcn/ui:\n<br><small> Componentes accesibles y personalizables</small></span> </a> </h5> <div class=\"rbt-card-bottom\"> <a class=\"transparent-button\" href=\"/course/shadcn-ui\">\nSaber más\n<i><svg width=\"17\" height=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><g stroke=\"#27374D\" fill=\"none\" fill-rule=\"evenodd\"><path d=\"M10.614 0l5.629 5.629-5.63 5.629\"></path><path stroke-linecap=\"square\" d=\"M.663 5.572h14.594\"></path></g></svg></i> </a> </div> </div> </div>   <div class=\"rbt-card card-list variation-02 rbt-hover mt--30\"> <div class=\"rbt-card-img\"> <a href=\"/course/riverpod\"> <img width=\"290\" height=\"150\" src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_290,h_150,f_webp/v1720473549/courses/riverpod/banner/riverpod.jpg\" alt=\"Mini-Curso: Riverpod providers con anotaciones\"> </a> </div> <div class=\"rbt-card-body\"> <h5 class=\"rbt-card-title\"> <a href=\"/course/riverpod\"> <span class=\"fs-3\">Mini-Curso:\n<br><small> Riverpod providers con anotaciones</small></span> </a> </h5> <div class=\"rbt-card-bottom\"> <a class=\"transparent-button\" href=\"/course/riverpod\">\nSaber más<i><svg width=\"17\" height=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><g stroke=\"#27374D\" fill=\"none\" fill-rule=\"evenodd\"><path d=\"M10.614 0l5.629 5.629-5.63 5.629\"></path><path stroke-linecap=\"square\" d=\"M.663 5.572h14.594\"></path></g></svg></i> </a> </div> </div> </div>   <div class=\"rbt-card card-list variation-02 rbt-hover mt--30\"> <div class=\"rbt-card-img\"> <a href=\"/course/visual-studio-code\"> <img width=\"290\" height=\"150\" src=\"https://res.cloudinary.com/dl1k2dee0/image/upload/w_290,h_150,f_webp/v1720473924/courses/vscode/banner/vscode.jpg\" alt=\"Visual Studio Code: Mejora tu velocidad para codificar\"> </a> </div> <div class=\"rbt-card-body\"> <h5 class=\"rbt-card-title\"> <a href=\"/course/visual-studio-code\"> <span class=\"fs-3\">Visual Studio Code:\n<br><small> Mejora tu velocidad para codificar</small></span> </a> </h5> <div class=\"rbt-card-bottom\"> <a class=\"transparent-button\" href=\"/course/visual-studio-code\">\nSaber más<i><svg width=\"17\" height=\"12\" xmlns=\"http://www.w3.org/2000/svg\"><g stroke=\"#27374D\" fill=\"none\" fill-rule=\"evenodd\"><path d=\"M10.614 0l5.629 5.629-5.63 5.629\"></path><path stroke-linecap=\"square\" d=\"M.663 5.572h14.594\"></path></g></svg></i> </a> </div> </div> </div>  </div> </div>  </div> </div>  </main> <!-- Start Footer aera --> <footer class=\"rbt-footer footer-style-1\"> <div class=\"footer-top\"> <div class=\"container\"> <div class=\"row row--15 mt_dec--30\"> <div class=\"col-lg-4 col-md-6 col-sm-6 col-12 mt--30\"> <div class=\"footer-widget\"> <div class=\"logo\"> <a href=\"/\" class=\"logo-gradient\"> Fernando-Herrera </a> </div> <p class=\"description mt--20\">\nIntenta hacer pequeños logros todos los días. Si lo haces así,\n              imagínate lo que lograrás en un mes... en un año... en una vida...\n</p> <div class=\"contact-btn mt--30\"> <a href=\"/cdn-cgi/l/email-protection#671408040e060b2703021113060b0b02144904080a\" class=\"rbt-btn hover-icon-reverse btn-border-gradient radius-round\"> <div class=\"icon-reverse-wrapper\"> <span class=\"btn-text\">Contáctame</span> <span class=\"btn-icon\"> <i class=\"feather-arrow-right\"></i> </span> <span class=\"btn-icon\"> <i class=\"feather-arrow-right\"></i> </span> </div> </a> </div> </div> </div> <div class=\"col-lg-2 col-md-6 col-sm-6 col-12 mt--30\"></div> <div class=\"col-lg-2 col-md-6 col-sm-6 col-12 mt--30\"></div> <div class=\"col-lg-3 col-md-6 col-sm-6 col-12 mt--30\"> <div class=\"footer-widget\"> <h5 class=\"ft-title\">Contacto</h5> <ul class=\"ft-link\"> <li> <span>E-mail de contacto:</span>  <a href=\"/cdn-cgi/l/email-protection#1d6e727e747c715d79786b697c7171786e337e7270\"> <strong><span class=\"__cf_email__\" data-cfemail=\"80f3efe3e9e1ecc0e4e5f6f4e1ecece5f3aee3efed\">[email&#160;protected]</span> </strong> </a> </li> <li> <span>E-mail para empresas:</span>  <a href=\"/cdn-cgi/l/email-protection#21524e514e5355446145445755404d4d44520f424e4c\"> <strong><span class=\"__cf_email__\" data-cfemail=\"592a3629362b2d3c193d3c2f2d3835353c2a773a3634\">[email&#160;protected]</span></strong> </a> </li> <li> <span>Ubicación:</span> Ottawa, Canadá\n</li> </ul> <ul class=\"social-icon social-default icon-naked justify-content-start mt--20\"> <li> <a target=\"_blank\" href=\"https://twitter.com/Fernando_Her85\"><i class=\"fab fab fa-twitter\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.linkedin.com/in/fernando-herrera-b6b204200/\"><i class=\"fab fab fa-linkedin-in\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.instagram.com/fernando_her85/\"><i class=\"fab fab fa-instagram\"></i></a> </li><li> <a target=\"_blank\" href=\"https://www.youtube.com/@devtalles\"><i class=\"fab fab fa-youtube\"></i></a> </li><li> <a target=\"_blank\" href=\"https://podcasters.spotify.com/pod/show/fernando-her85\"><i class=\"fab fab fa-spotify\"></i></a> </li><li> <a target=\"_blank\" href=\"https://discord.com/invite/pBjEVYTC7t\"><i class=\"fab fab fa-discord\"></i></a> </li> </ul> </div> </div> </div> </div> </div> </footer> <!-- Separator --> <!-- End Footer aera --> <div class=\"rbt-separator-mid\"> <div class=\"container\"> <hr class=\"rbt-separator m-0\"> </div> </div> <!-- Copyright --> <div class=\"copyright-area copyright-style-1 ptb--20\"> <div class=\"container\"> <div class=\"row align-items-center\"> <div class=\"col-xxl-6 col-xl-6 col-lg-6 col-md-12 col-12\"> <p class=\"rbt-link-hover text-center text-lg-start\"> <span class=\"mr-2\">Copyright © 2025 </span> <a href=\"https://cursos.devtalles.com\">Fernando & DevTalles.com</a> All\n          Rights Reserved\n</p> </div> <div class=\"col-xxl-6 col-xl-6 col-lg-6 col-md-12 col-12\"> <ul class=\"copyright-link rbt-link-hover justify-content-center justify-content-lg-end mt_sm--10 mt_md--10\"> <li> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/politicas-de-privacidad\">Términos de servicio</a> </li> <li> <a target=\"_blank\" href=\"https://cursos.devtalles.com/pages/todos-los-cursos\">Cursos y Suscripciones</a> </li> <li> <a href=\"/auth/login/\">Login</a> </li> </ul> </div> </div> </div> </div> <!-- Scroll to top --> <div class=\"rbt-progress-parent\"> <svg class=\"rbt-back-circle svg-inner\" width=\"100%\" height=\"100%\" viewBox=\"-1 -1 102 102\"> <path d=\"M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98\"></path> </svg> </div>  <!-- JS\n============================================ --> <script data-cfasync=\"false\" src=\"/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js\"></script><script src=\"/assets/js/vendor/modernizr.min.js\"></script> <script src=\"/assets/js/vendor/jquery.js\"></script> <script src=\"/assets/js/vendor/bootstrap.min.js\"></script> <script src=\"/assets/js/vendor/sal.js\"></script> <script src=\"/assets/js/vendor/swiper.js\"></script> <script src=\"/assets/js/vendor/magnify.min.js\"></script> <script src=\"/assets/js/vendor/jquery-appear.js\"></script> <script src=\"/assets/js/vendor/odometer.js\"></script> <script src=\"/assets/js/vendor/backtotop.js\"></script> <script src=\"/assets/js/vendor/isotop.js\"></script> <script src=\"/assets/js/vendor/imageloaded.js\"></script> <script src=\"/assets/js/vendor/waypoint.min.js\"></script> <!-- <script is:inline src=\"/assets/js/vendor/wow.js\"></script> --> <!-- <script is:inline src=\"/assets/js/vendor/easypie.js\"></script> --> <!-- <script is:inline src=\"/assets/js/vendor/paralax.min.js\"></script> --> <script src=\"/assets/js/vendor/paralax-scroll.js\"></script> <script src=\"/assets/js/vendor/text-type.js\"></script> <script src=\"/assets/js/vendor/jquery-one-page-nav.js\"></script> <script src=\"/assets/js/vendor/bootstrap-select.min.js\"></script> <script src=\"/assets/js/vendor/jquery-ui.js\"></script> <script src=\"/assets/js/vendor/magnify-popup.min.js\"></script> <script src=\"/assets/js/vendor/countdown.js\"></script> <script src=\"/assets/js/vendor/plyr.js\"></script> <script src=\"/assets/js/main.min.js\"></script> </body> </html>"
+        }
+      }
+    ],
+    "Enviar Info OPEN IA": [
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_053f446407dca26a00690cea392d588196babe1c40d8c1594b",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": {
+                    "courses": [
+                      {
+                        "courseName": "Nest: Desarrollo backend escalable con Node",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/nest-backend-escalable",
+                        "udemyUrl": null,
+                        "description": "Nest es un framework de node extensible, versátil y progresivo, el cual nos ofrece la columna vertebral para crear aplicaciones backend escalables y eficientes.",
+                        "category": "Backend",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Principios: SOLID y Clean Code",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/pricipios-solid-cleancode",
+                        "udemyUrl": null,
+                        "description": "Si hablamos de diseño y desarrollo de aplicaciones, Los principios S.O.L.I.D. son unas palabras que resumen buenas prácticas para escribir código mantenible y escalable.",
+                        "category": "Infraestructura",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Docker: Guía práctica de uso para desarrolladores",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/docker-guia-practica",
+                        "udemyUrl": null,
+                        "description": "Aquí aprenderás Docker y para qué te puede servir, aprende a utilizar y crear imágenes, controlar el ciclo de vida de contenedores y entender la arquitectura de Docker.",
+                        "category": "Infraestructura",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Patrones de Diseño: Soluciones prácticas y eficientes",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/patrones-de-diseno",
+                        "udemyUrl": null,
+                        "description": "¡24 Patrones de Diseño para resolver problemas comunes al programar, además de escribir código más legible, reutilizable y mantenible!",
+                        "category": "Desarrollo Web",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Java: Spring Boot - Guía definitiva",
+                        "instructorName": "Gabriel Chaldú",
+                        "devtallesUrl": "https://fernando-herrera.com/course/spring-boot",
+                        "udemyUrl": null,
+                        "description": "Aprende Spring Boot desde cero con Gabriel Chaldú: inicia con Spring MVC y Thymeleaf creando un sitio web dinámico con JdbcTemplate y controladores básicos. ¡Luego desarrolla un API REST con seguridad, JPA, relaciones en BD y buenas prácticas MVC y mucho más!",
+                        "category": "Backend",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "React Router: Navegación declarativa y framework",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/react-router",
+                        "udemyUrl": null,
+                        "description": "Aprende a trabajar con React Router tanto como librería para proyectos tipo SPA o trabajarlo cómo Framework para toda tu aplicación.",
+                        "category": "Backend",
+                        "additionalInformation": "Curso gratuito."
+                      },
+                      {
+                        "courseName": "React: De cero a experto",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/react-cero-experto",
+                        "udemyUrl": null,
+                        "description": "¡En este curso de React aprenderás desde los fundamentos de la librería hasta aspectos técnicos avanzados para proyectos profesionales!",
+                        "category": "Frontend",
+                        "additionalInformation": "503 Lecciones, 70K Estudiantes, 20K Reseñas, Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "n8n + MCP: Automatización y agentes de IA inteligentes",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/n8n-mcp",
+                        "udemyUrl": null,
+                        "description": "¡Aprende a crear automatizaciones poderosas con n8n: desde flujos simples con Google Sheets y correo, hasta agentes inteligentes con IA!",
+                        "category": "Automatización",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": ".NET Backend: .NET Core, SQL Server y seguridad JWT",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/net-backend",
+                        "udemyUrl": null,
+                        "description": "¡Construye desde cero una API RESTful profesional en .NET para un e-commerce real! Aprende sobre JWT y patrones de seguridad.",
+                        "category": "Backend",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Django: Crea aplicaciones web robustas con Python",
+                        "instructorName": "Fernado Herrera",
+                        "devtallesUrl": "https://fernando-herrera.com/course/django",
+                        "udemyUrl": null,
+                        "description": "¡Aprende Django desde las bases con este curso práctico! Crea sitios web, conecta bases de datos, despliega y mucho más.",
+                        "category": "Backend",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      },
+                      {
+                        "courseName": "Python: Fundamentos hasta los detalles",
+                        "instructorName": "Ricardo Cuéllar",
+                        "devtallesUrl": "https://fernando-herrera.com/course/python",
+                        "udemyUrl": null,
+                        "description": "Curso impartido por el instructor Ricardo Cuéllar - Aprende las bases de Python: variables, tipos de datos, funciones, y más.",
+                        "category": "Programación",
+                        "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+                      }
+                    ],
+                    "instructorName": "Fernado Herrera",
+                    "udemyUrl": "https://www.udemy.com/user/550c38655ec11/",
+                    "devtallesUrl": "https://fernando-herrera.com/",
+                    "additionalInformation": "Fernando Herrera es fundador de DevTalles, instructor partner de Udemy, y está entre el top 5 de instructores en español con calificación promedio de 4.8+. Cuenta con una comunidad grande y cursos en categorías como Backend, Infraestructura, Desarrollo Web, y más."
+                  }
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        }
+      }
+    ],
+    "Extraer arreglo de cursos": [
+      {
+        "json": {
+          "courseName": "Nest: Desarrollo backend escalable con Node",
+          "instructorName": "Fernado Herrera",
+          "devtallesUrl": "https://fernando-herrera.com/course/nest-backend-escalable",
+          "udemyUrl": "https://www.udemy.com/course/nest-framework/?couponCode=NOVIEMBRE-2025",
+          "description": "Nest es un framework de node extensible, versátil y progresivo, el cual nos ofrece la columna vertebral para crear aplicaciones backend escalables y eficientes.",
+          "category": "Backend",
+          "additionalInformation": "Precio: $10-20 USD, tiene 200 valoraciones."
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Inicio manual de proceso": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Sitios a investigar": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filtrar sitios web con enlace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar sitios web con enlace": {
+      "main": [
+        [
+          {
+            "node": "Obtener HTML del sitio web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener HTML del sitio web": {
+      "main": [
+        [
+          {
+            "node": "Transformar a Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformar a Markdown": {
+      "main": [
+        [
+          {
+            "node": "Enviar Info OPEN IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Info OPEN IA": {
+      "main": [
+        [
+          {
+            "node": "Extraer arreglo de cursos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer arreglo de cursos": {
+      "main": [
+        [
+          {
+            "node": "Iterar cada URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        [
+          {
+            "node": "Iterar cada URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iterar cada URL": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Actualizar Información del curso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Información del curso": {
+      "main": [
+        [
+          {
+            "node": "Scrape a url and get its content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape a url and get its content": {
+      "main": [
+        [
+          {
+            "node": "Create a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a document": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Url Temario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar temario google docs": {
+      "main": [
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Url Temario": {
+      "main": [
+        [
+          {
+            "node": "Extraer información de curso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer información de curso": {
+      "main": [
+        [
+          {
+            "node": "Actualizar temario google docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7d033520-0b27-48c6-92cb-59e8b75baa66",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1c60cfc62b06f723d05e1512c8a21037e546683a859f6caf317befd43a8e2f58"
+  },
+  "id": "HDzW1ErO6FcSLssz",
+  "tags": []
+}
